@@ -67,6 +67,11 @@ function normalizeMessages(messages) {
     return normalizedMessages;
 }
 
+app.get("/", (req, res) => {
+    const spaceUrl = `${req.protocol}://${req.get("host")}/v1/chat/completions`;
+    res.json({ spaceUrl });
+});
+
 app.post("/v1/chat/completions", async (req, res) => {
     try {
         const apiUrl = "https://chatapi.akash.network/api/v1/chat/completions";
@@ -74,10 +79,13 @@ app.post("/v1/chat/completions", async (req, res) => {
 
         let messages = normalizeMessages(req.body.messages || []);
 
+        const temperature = req.body.temperature !== undefined ? req.body.temperature : 1;
+
         const requestData = {
             model: "DeepSeek-R1",
             messages: messages,
-            max_tokens: req.body.max_tokens || 1500,
+            max_tokens: req.body.max_tokens || 4096,
+            temperature: temperature,
             stream: true,
         };
 
@@ -205,7 +213,7 @@ app.post("/v1/chat/completions", async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 7860;
 app.listen(PORT, () => {
     console.log(`Proxy server running on port ${PORT}`);
 });
