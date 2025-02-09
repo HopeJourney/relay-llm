@@ -74,7 +74,9 @@ function normalizeMessages(messages) {
 }
 
 app.get("/", (req, res) => {
-    const spaceUrl = `https://${req.get("host")}/v1/chat/completions`;
+    const host = req.get("host");
+    const spaceIdentifier = host.split(".")[0];
+    const spaceUrl = `https://${spaceIdentifier}.hf.space/v1/chat/completions`;
     res.json({ spaceUrl });
 });
 
