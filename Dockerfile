@@ -13,9 +13,6 @@ RUN git clone https://github.com/HappyYuzu/akash-r1.git .
 # Install dependencies
 RUN npm install
 
-# Copy environment files (if needed)
-COPY .envexample ./.env
-
 # Expose the port the app runs on
 EXPOSE 7860
 
