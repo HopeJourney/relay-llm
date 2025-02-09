@@ -5,9 +5,14 @@ const axios = require("axios");
 const app = express();
 
 app.use(express.json());
+app.enable("trust proxy");
 
-const API_TOKEN = process.env.TOKEN;
-const PASSWORD = process.env.PASSWORD;
+app.use((req, res, next) => {
+    if (req.headers["x-forwarded-proto"] !== "https") {
+        return res.redirect(`https://${req.headers.host}${req.url}`);
+    }
+    next();
+});
 
 function normalizeMessages(messages) {
     if (!messages || messages.length === 0) return [];
@@ -69,15 +74,14 @@ function normalizeMessages(messages) {
 }
 
 app.get("/", (req, res) => {
-    const spaceUrl = `http://${req.get("host")}/v1/chat/completions`;
-    const endpoint = spaceUrl.replace("http://", "https://");
-    res.json({ endpoint });
+    const spaceUrl = `https://${req.get("host")}/v1/chat/completions`;
+    res.json({ spaceUrl });
 });
 
 app.post("/v1/chat/completions", async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
-        if (!authHeader || authHeader !== `Bearer ${PASSWORD}`) {
+        if (!authHeader || authHeader !== `Bearer ${process.env.PASSWORD}`) {
             return res.status(403).json({ error: "Forbidden: Invalid password" });
         }
 
@@ -106,7 +110,7 @@ app.post("/v1/chat/completions", async (req, res) => {
             responseType: "stream",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${API_TOKEN}`,
+                Authorization: `Bearer ${process.env.TOKEN}`,
             },
         });
 
@@ -212,15 +216,10 @@ app.post("/v1/chat/completions", async (req, res) => {
     } catch (error) {
         console.error("API Request Error:", error.message);
         res.status(500).json({
-            error: {
-                message: "An error occurred while processing your request.",
-                details: error.message,
-            },
+            error: { message: "An error occurred while processing your request.", details: error.message },
         });
     }
 });
 
 const PORT = process.env.PORT || 7860;
-app.listen(PORT, () => {
-    console.log(`Proxy server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Proxy server running on port ${PORT}`));
