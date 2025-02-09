@@ -1,24 +1,15 @@
-# Use Node.js LTS as the base image
-FROM node:18-bullseye-slim
+FROM node:18
 
-# Update and install git
+WORKDIR /app
+
 RUN apt-get update && apt-get install -y git
 
-# Set the working directory inside the container
-WORKDIR /usr/src/app
+RUN git clone https://github.com/HappyYuzu/akash-r1.git /app
 
-# Clone the repository
-RUN git clone https://github.com/HappyYuzu/akash-r1.git .
+RUN npm install --omit=dev
 
-# Install dependencies
-RUN npm install
+ENV PORT=7860
 
-# Expose the port the app runs on
 EXPOSE 7860
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=12882"
-
-# Start the application
 CMD ["node", "app.js"]
