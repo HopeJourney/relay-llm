@@ -9,6 +9,8 @@ app.use(express.json());
 const API_TOKEN = process.env.TOKEN;
 const PASSWORD = process.env.PASSWORD;
 
+app.set("trust proxy", true);
+
 function normalizeMessages(messages) {
     if (!messages || messages.length === 0) return [];
     const systemMessages = messages.filter((msg) => msg.role === "system");
@@ -69,7 +71,8 @@ function normalizeMessages(messages) {
 }
 
 app.get("/", (req, res) => {
-    const spaceUrl = `https://${req.get("host")}/v1/chat/completions`;
+    const protocol = req.get("x-forwarded-proto") === "https" ? "https" : "http";
+    const spaceUrl = `${protocol}://${req.get("host")}/v1/chat/completions`;
     res.json({ spaceUrl });
 });
 
@@ -81,9 +84,7 @@ app.post("/v1/chat/completions", async (req, res) => {
         }
 
         const apiUrl = "https://chatapi.akash.network/api/v1/chat/completions";
-
-        let messages = normalizeMessages(req.body.messages || []);
-
+        const messages = normalizeMessages(req.body.messages || []);
         const temperature = req.body.temperature !== undefined ? req.body.temperature : 1;
 
         const requestData = {
@@ -161,7 +162,7 @@ app.post("/v1/chat/completions", async (req, res) => {
             if (!res.writableEnded) {
                 res.write(": keep-alive\n\n");
             }
-        }, 15000);
+        }, 10000);
 
         response.data.on("data", (chunk) => {
             const chunkStr = chunk.toString();
