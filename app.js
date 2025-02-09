@@ -1,5 +1,4 @@
 require("dotenv").config();
-
 const express = require("express");
 const axios = require("axios");
 const app = express();
@@ -59,10 +58,7 @@ function normalizeMessages(messages) {
         normalizedMessages.pop();
     }
 
-    if (
-        normalizedMessages[0]?.role === "system" &&
-        (!normalizedMessages[1] || normalizedMessages[1].role !== "user")
-    ) {
+    if (normalizedMessages[0]?.role === "system" && (!normalizedMessages[1] || normalizedMessages[1].role !== "user")) {
         normalizedMessages.splice(1, 0, { role: "user", content: "" });
     }
 
@@ -74,9 +70,9 @@ function normalizeMessages(messages) {
 }
 
 app.get("/", (req, res) => {
+    const protocol = req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
     const host = req.get("host");
-    const spaceIdentifier = host.split(".")[0];
-    const spaceUrl = `https://${spaceIdentifier}.hf.space/v1/chat/completions`;
+    const spaceUrl = `${protocol}://${host}/v1/chat/completions`;
     res.json({ spaceUrl });
 });
 
@@ -88,12 +84,8 @@ app.post("/v1/chat/completions", async (req, res) => {
         }
 
         const apiUrl = "https://chatapi.akash.network/api/v1/chat/completions";
-
-        let messages = normalizeMessages(req.body.messages || []);
-
-        const temperature =
-            req.body.temperature !== undefined ? req.body.temperature : 1;
-
+        const messages = normalizeMessages(req.body.messages || []);
+        const temperature = req.body.temperature !== undefined ? req.body.temperature : 1;
         const requestData = {
             model: "DeepSeek-R1",
             messages: messages,
@@ -118,22 +110,16 @@ app.post("/v1/chat/completions", async (req, res) => {
 
         if (!req.body.stream) {
             let combinedContent = "";
-
             for await (const chunk of response.data) {
                 const chunkStr = chunk.toString();
                 const lines = chunkStr.split("\n");
-
                 for (const line of lines) {
                     if (!line.trim()) continue;
-
                     if (line.startsWith("data: ")) {
                         try {
                             const jsonData = JSON.parse(line.slice(6));
-                            const content =
-                                jsonData.choices?.[0]?.delta?.content || "";
-                            combinedContent += content
-                                .replace(/<think>/g, "<Thoughts>")
-                                .replace(/<\/think>/g, "</Thoughts>");
+                            const content = jsonData.choices?.[0]?.delta?.content || "";
+                            combinedContent += content.replace(/<think>/g, "<Thoughts>").replace(/<\/think>/g, "</Thoughts>");
                         } catch (error) {
                             console.error("JSON Parse Error:", error.message);
                         }
@@ -157,7 +143,6 @@ app.post("/v1/chat/completions", async (req, res) => {
                     },
                 ],
             };
-
             return res.json(R1response);
         }
 
@@ -174,29 +159,20 @@ app.post("/v1/chat/completions", async (req, res) => {
         response.data.on("data", (chunk) => {
             const chunkStr = chunk.toString();
             const lines = chunkStr.split("\n");
-
             for (const line of lines) {
                 if (!line.trim()) continue;
-
                 if (line === "data: [DONE]") {
                     res.write(line + "\n\n");
                     return;
                 }
-
                 if (line.startsWith("data: ")) {
                     try {
                         const jsonData = JSON.parse(line.slice(6));
-
-                        if (
-                            jsonData.choices &&
-                            jsonData.choices[0]?.delta?.content
-                        ) {
-                            jsonData.choices[0].delta.content =
-                                jsonData.choices[0].delta.content
-                                    .replace(/<think>/g, "<Thoughts>")
-                                    .replace(/<\/think>/g, "</Thoughts>");
+                        if (jsonData.choices && jsonData.choices[0]?.delta?.content) {
+                            jsonData.choices[0].delta.content = jsonData.choices[0].delta.content
+                                .replace(/<think>/g, "<Thoughts>")
+                                .replace(/<\/think>/g, "</Thoughts>");
                         }
-
                         res.write(`data: ${JSON.stringify(jsonData)}\n\n`);
                     } catch (error) {
                         console.error("JSON Parse Error:", error.message);
@@ -217,9 +193,7 @@ app.post("/v1/chat/completions", async (req, res) => {
         });
     } catch (error) {
         console.error("API Request Error:", error.message);
-        res.status(500).json({
-            error: { message: "An error occurred while processing your request.", details: error.message },
-        });
+        res.status(500).json({ error: { message: "An error occurred while processing your request.", details: error.message } });
     }
 });
 
