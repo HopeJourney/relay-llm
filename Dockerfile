@@ -4,6 +4,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y git
 
+RUN rm -rf /app/.git
 RUN git clone https://github.com/HappyYuzu/akash-r1.git /app
 
 RUN npm install --omit=dev
