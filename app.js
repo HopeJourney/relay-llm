@@ -70,15 +70,9 @@ function normalizeMessages(messages) {
 }
 
 app.get("/", (req, res) => {
-    console.log("----- / 엔드포인트 요청 시작 -----"); // 로그 시작점 명시
-    console.log("req.headers:", req.headers); // 모든 헤더 출력
-    console.log("req.get('host'):", req.get("host"));
-    console.log("req.headers['x-forwarded-proto']:", req.headers["x-forwarded-proto"]); // x-forwarded-proto 헤더 값 명시적 출력
     const protocol = req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
     const host = req.get("host");
     const spaceUrl = `${protocol}://${host}/v1/chat/completions`;
-    console.log("생성된 spaceUrl:", spaceUrl); // 생성된 spaceUrl 로그 출력
-    console.log("----- / 엔드포인트 요청 종료 -----"); // 로그 종료점 명시
     res.json({ spaceUrl });
 });
 
@@ -160,7 +154,7 @@ app.post("/v1/chat/completions", async (req, res) => {
             if (!res.writableEnded) {
                 res.write(": keep-alive\n\n");
             }
-        }, 15000);
+        }, 10000);
 
         response.data.on("data", (chunk) => {
             const chunkStr = chunk.toString();
