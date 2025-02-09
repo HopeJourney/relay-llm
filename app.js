@@ -6,6 +6,9 @@ const app = express();
 
 app.use(express.json());
 
+const API_TOKEN = process.env.TOKEN;
+const PASSWORD = process.env.PASSWORD;
+
 function normalizeMessages(messages) {
     if (!messages || messages.length === 0) return [];
     const systemMessages = messages.filter((msg) => msg.role === "system");
@@ -47,9 +50,7 @@ function normalizeMessages(messages) {
         });
     }
 
-    if (
-        normalizedMessages[normalizedMessages.length - 1]?.role === "assistant"
-    ) {
+    if (normalizedMessages[normalizedMessages.length - 1]?.role === "assistant") {
         normalizedMessages.pop();
     }
 
@@ -68,14 +69,18 @@ function normalizeMessages(messages) {
 }
 
 app.get("/", (req, res) => {
-    const spaceUrl = `${req.protocol}://${req.get("host")}/v1/chat/completions`;
+    const spaceUrl = `https://${req.get("host")}/v1/chat/completions`;
     res.json({ spaceUrl });
 });
 
 app.post("/v1/chat/completions", async (req, res) => {
     try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || authHeader !== `Bearer ${PASSWORD}`) {
+            return res.status(403).json({ error: "Forbidden: Invalid password" });
+        }
+
         const apiUrl = "https://chatapi.akash.network/api/v1/chat/completions";
-        const Token = process.env.TOKEN;
 
         let messages = normalizeMessages(req.body.messages || []);
 
@@ -99,7 +104,7 @@ app.post("/v1/chat/completions", async (req, res) => {
             responseType: "stream",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${Token}`,
+                Authorization: `Bearer ${API_TOKEN}`,
             },
         });
 
