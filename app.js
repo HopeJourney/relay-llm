@@ -70,7 +70,7 @@ function normalizeMessages(messages) {
 
 app.get("/", (req, res) => {
     const spaceUrl = `http://${req.get("host")}/v1/chat/completions`;
-    const endpoint = spaceUrl.replace(/^http:/, "https:");
+    const endpoint = spaceUrl.replace("http://", "https://");
     res.json({ endpoint });
 });
 
