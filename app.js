@@ -3,7 +3,7 @@ const express = require("express");
 const axios = require("axios");
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.enable("trust proxy");
 
 app.use((req, res, next) => {
