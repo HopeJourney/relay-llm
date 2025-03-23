@@ -102,6 +102,8 @@ app.post("/v1/chat/completions", async (req, res) => {
                 { max_output_tokens: req.body.max_tokens || 4096 } :
                 { max_tokens: req.body.max_tokens || 4096 }),
             temperature: temperature,
+            top_p: req.body.top_p || 1,
+            top_k: req.body.top_k || 40,
             stream: req.body.stream,
         };
 
