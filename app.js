@@ -102,11 +102,24 @@ app.post("/v1/chat/completions", async (req, res) => {
                 { max_output_tokens: req.body.max_tokens || 4096 } :
                 { max_tokens: req.body.max_tokens || 4096 }),
             temperature: temperature,
-            stream: req.body.stream || false,
+            stream: req.body.stream,
         };
 
         console.log("Outgoing request to API:");
         console.log(JSON.stringify(requestData, null, 2));
+
+        if (req.body.stream == false) {
+            const response = await axios({
+                method: "post",
+                url: apiUrl,
+                data: requestData,
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${envData.keys[authHeader.split(" ")[1]]}`,
+                },
+            });
+            return res.json(response.data);
+        }
 
         const response = await axios({
             method: "post",
@@ -118,27 +131,6 @@ app.post("/v1/chat/completions", async (req, res) => {
                 Authorization: `Bearer ${envData.keys[authHeader.split(" ")[1]]}`,
             },
         });
-
-        if (!req.body.stream) {
-            const combinedContent = response?.data?.choices?.[0]?.message?.content
-            const response = {
-                id: `${Math.random().toString(36).substring(7)}`,
-                object: "chat.completion",
-                created: Date.now(),
-                model: requestData.model,
-                choices: [
-                    {
-                        message: {
-                            role: "assistant",
-                            content: combinedContent,
-                        },
-                        finish_reason: "stop",
-                        index: 0,
-                    },
-                ],
-            };
-            return res.json(response);
-        }
 
         res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
         res.setHeader("Cache-Control", "no-cache");
